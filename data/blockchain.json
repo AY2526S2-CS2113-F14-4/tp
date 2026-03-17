@@ -1,0 +1,25 @@
+{
+  "blocks": [
+    {
+      "index": 0,
+      "timestamp": "2026-02-12 14:30:21",
+      "previousHash": "0000000000000000",
+      "currentHash": "439def57b28567b0de019485bb56dd9a006b0f0202453a3c38cc38e4ba36be01",
+      "transactions": ["Genesis Block"]
+    },
+    {
+      "index": 1,
+      "timestamp": "2026-02-12 14:35:02",
+      "previousHash": "439def57b28567b0de019485bb56dd9a006b0f0202453a3c38cc38e4ba36be01",
+      "currentHash": "ca8e23e8fcfb716ad0ff82715efb51fe76d3fc6345d870f69fc3992cb806937e",
+      "transactions": ["alice -> bob : 10", "bob -> carol : 5"]
+    },
+    {
+      "index": 2,
+      "timestamp": "2026-03-17 20:08:56",
+      "previousHash": "ca8e23e8fcfb716ad0ff82715efb51fe76d3fc6345d870f69fc3992cb806937e",
+      "currentHash": "0de00bf8030b5593d73016bb610b7c851c9425115b7ddaf8f2e769b17a84adab",
+      "transactions": ["bob -> 0x1111111111111111111111111111111111111111 : 1.5", "bob -> network-fee : 0.01"]
+    }
+  ]
+}

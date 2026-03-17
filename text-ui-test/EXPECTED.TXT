@@ -1,9 +1,6 @@
 Wallet created: alice
 Wallet created: bob
-Send command validated successfully.
-Wallet: bob
-To: alice
-Amount: 5.0
-Error: Insufficient balance.
+Error: Invalid recipient address.
+Error: Invalid recipient address.
 Error: Wallet not found.
-Error: Invalid send format. Use: send w/WALLET to/ADDR amt/AMT
+Error: Invalid send format. Use: send w/WALLET_NAME to/RECIPIENT_ADDRESS amt/AMOUNT [speed/SPEED] [fee/FEE] [note/MEMO]
