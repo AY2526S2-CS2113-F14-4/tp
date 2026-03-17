@@ -43,7 +43,7 @@ public class Parser {
         case LIST -> new ListCommand(walletManager);
         case HELP -> new HelpCommand();
         case CREATE -> new CreateCommand(arguments, walletManager);
-        case BALANCE -> new BalanceCommand();
+        case BALANCE -> new BalanceCommand(arguments);
         case VALIDATE -> new ValidateCommand();
         case VIEWBLOCK -> new ViewBlockCommand(arguments);
         case EXIT -> new ExitCommand();

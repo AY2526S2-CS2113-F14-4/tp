@@ -1,11 +1,18 @@
 package seedu.duke.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Blockchain {
     private static final String GENESIS_PREVIOUS_HASH = "0000000000000000";
+    private static final Pattern TRANSACTION_PATTERN =
+            Pattern.compile("^(.+?)\\s*->\\s*(.+?)\\s*:\\s*([+-]?\\d+(?:\\.\\d+)?)$");
 
     private final List<Block> blocks;
 
@@ -31,6 +38,10 @@ public class Blockchain {
 
     public int size() {
         return blocks.size();
+    }
+
+    public List<Block> getBlocks() {
+        return Collections.unmodifiableList(blocks);
     }
 
     public Block getBlock(int index) {
@@ -66,43 +77,52 @@ public class Blockchain {
         return ValidationResult.valid();
     }
 
+    public void addTransactions(List<String> transactions) {
+        Objects.requireNonNull(transactions);
+        if (transactions.isEmpty()) {
+            throw new IllegalArgumentException("Transactions cannot be empty.");
+        }
+
+        Block previousBlock = blocks.get(blocks.size() - 1);
+        Block newBlock = new Block(
+                previousBlock.getIndex() + 1,
+                LocalDateTime.now(),
+                previousBlock.getCurrentHash(),
+                transactions);
+        blocks.add(newBlock);
+    }
+
     public double getBalance(String walletName) {
-        double balance = 0.0;
+        return getPreciseBalance(walletName).doubleValue();
+    }
+
+    public BigDecimal getPreciseBalance(String walletName) {
+        String normalizedWalletName = walletName == null ? "" : walletName.trim();
+        BigDecimal balance = BigDecimal.ZERO;
         for (Block block : blocks) {
             for (String transaction : block.getTransactions()) {
-                balance += parseTransactionAmount(walletName, transaction);
+                balance = balance.add(parseTransactionAmount(normalizedWalletName, transaction));
             }
         }
         return balance;
     }
 
-    private double parseTransactionAmount(String walletName, String transaction) {
-        // Expected format: "sender -> receiver : amount"
-        String[] parts = transaction.split(" -> ");
-        if (parts.length != 2) {
-            return 0.0;
-        }
-        String sender = parts[0].trim();
-        String rest = parts[1];
-        String[] receiverAmount = rest.split(" : ");
-        if (receiverAmount.length != 2) {
-            return 0.0;
-        }
-        String receiver = receiverAmount[0].trim();
-        String amountStr = receiverAmount[1].trim();
-
-        double amount;
-        try {
-            amount = Double.parseDouble(amountStr);
-        } catch (NumberFormatException e) {
-            return 0.0;
+    private BigDecimal parseTransactionAmount(String walletName, String transaction) {
+        Matcher matcher = TRANSACTION_PATTERN.matcher(transaction);
+        if (!matcher.matches()) {
+            return BigDecimal.ZERO;
         }
 
-        if (walletName.equalsIgnoreCase(receiver)) {
-            return amount;
-        } else if (walletName.equalsIgnoreCase(sender)) {
-            return -amount;
+        String sender = matcher.group(1).trim();
+        String receiver = matcher.group(2).trim();
+        BigDecimal amount = new BigDecimal(matcher.group(3));
+        BigDecimal delta = BigDecimal.ZERO;
+        if (sender.equalsIgnoreCase(walletName)) {
+            delta = delta.subtract(amount);
         }
-        return 0.0;
+        if (receiver.equalsIgnoreCase(walletName)) {
+            delta = delta.add(amount);
+        }
+        return delta;
     }
 }

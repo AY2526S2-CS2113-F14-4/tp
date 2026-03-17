@@ -6,6 +6,11 @@ import seedu.duke.model.Wallet;
 import seedu.duke.model.WalletManager;
 
 public class CreateCommand extends Command {
+    private static final String HELP_DESCRIPTION = """
+            format: create NAME
+            Creates a wallet called NAME
+            """;
+  
     private static final String NAME_ERROR = "Error: wallet name cannot be empty.";
     private static final String DUPLICATE_ERROR = "Error: wallet name already exists.";
 
@@ -13,12 +18,13 @@ public class CreateCommand extends Command {
     private final WalletManager walletManager;
 
     public CreateCommand(String walletName, WalletManager walletManager) {
+        super(HELP_DESCRIPTION);
         this.walletName = walletName;
         this.walletManager = walletManager;
     }
 
     @Override
-    public void execute(Blockchain blockchain) throws Exceptions {
+    public void execute(String description, Blockchain blockchain) throws Exceptions {
         if (walletName == null || walletName.isBlank()) {
             throw new Exceptions(NAME_ERROR);
         }

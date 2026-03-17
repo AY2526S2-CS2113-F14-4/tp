@@ -9,16 +9,22 @@ import java.util.List;
 import java.util.Objects;
 
 public class ListCommand extends Command {
+    private static final String HELP_DESCRIPTION = """
+            format: list
+            lists all the available wallets
+            """;
+  
     private static final String NO_WALLETS_MESSAGE = "No wallets found.";
 
     private final WalletManager walletManager;
-
+  
     public ListCommand(WalletManager walletManager) {
+        super(HELP_DESCRIPTION);
         this.walletManager = Objects.requireNonNull(walletManager);
     }
 
     @Override
-    public void execute(Blockchain blockchain) throws Exceptions {
+    public void execute(String description, Blockchain blockchain) throws Exceptions {
         List<Wallet> wallets = walletManager.getWallets();
         if (wallets.isEmpty()) {
             System.out.println(NO_WALLETS_MESSAGE);

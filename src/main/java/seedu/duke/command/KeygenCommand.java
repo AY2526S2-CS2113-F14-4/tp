@@ -9,6 +9,11 @@ import seedu.duke.model.Wallet;
 import seedu.duke.model.WalletManager;
 
 public class KeygenCommand extends Command {
+    private static final String HELP_DESCRIPTION = """
+            format: keygen w/NAME
+            Generates and displays key pair for new wallet, or regenerates for existing wallet
+            Displays the process of creating a key pair
+            """;
     private static final String INVALID_WALLET_NUMBER_ERROR = "Error: Invalid number of args";
     private static final String INVALID_FORMAT_ERROR = "Error: Invalid send format. Use: keygen w/WALLET";
     private static final String WALLET_NOT_FOUND_ERROR = "Error: Wallet not found";
@@ -18,12 +23,13 @@ public class KeygenCommand extends Command {
     private final WalletManager walletManager;
 
     public KeygenCommand(String arguments, WalletManager walletManager) {
+        super(HELP_DESCRIPTION);
         this.arguments = arguments;
         this.walletManager = walletManager;
     }
 
     @Override
-    public void execute(Blockchain blockchain) throws Exceptions {
+    public void execute(String description, Blockchain blockchain) throws Exceptions {
         // Parse wallet name
         String walletName = parseArguments(arguments);
 

@@ -5,17 +5,24 @@ import seedu.duke.model.Block;
 import seedu.duke.model.Blockchain;
 
 public class ViewBlockCommand extends Command {
+    private static final String HELP_DESCRIPTION = """
+            format: viewblock INDEX
+            Displays the full details of a block
+            Details include: Block Index, Timestamp, Previous Hash, Current Hash and List of Transactions
+            """;
+
     private static final String INDEX_PARSE_ERROR = "Error: INDEX must be a non-negative integer.";
     private static final String INDEX_RANGE_ERROR = "Error: Block index out of range.";
 
     private final String indexText;
 
     public ViewBlockCommand(String indexText) {
+        super(HELP_DESCRIPTION);
         this.indexText = indexText;
     }
 
     @Override
-    public void execute(Blockchain blockchain) throws Exceptions {
+    public void execute(String description, Blockchain blockchain) throws Exceptions {
         Integer index = parseIndex(indexText);
         if (index == null) {
             throw new Exceptions(INDEX_PARSE_ERROR);
