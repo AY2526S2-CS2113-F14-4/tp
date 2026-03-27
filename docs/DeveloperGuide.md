@@ -36,6 +36,13 @@ Crypto1010 is implemented as a modular command-line application with clear separ
   - previous-hash linkage
   - transaction data quality
 
+### Blockchain Simulation Mode
+- Simulation Mode allows developers and users to interact with a fully functional blockchain environment locally without connecting to a real network. 
+- Test blockchain logic without real funds or network latency
+- Debug transaction flows and consensus mechanisms 
+- Demonstrate how blockchain systems work (educational use)
+- Rapid prototyping of new features (smart contracts, validation rules, etc.)
+
 ### Transaction and balance logic
 Transactions are represented in this format:
 `sender -> receiver : amount`
