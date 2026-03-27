@@ -1,6 +1,7 @@
 package seedu.duke.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import seedu.duke.exceptions.Exceptions;
 import seedu.duke.model.Blockchain;
@@ -39,6 +40,22 @@ class ListCommandTest {
             "1. alice | Address: " + alice.getAddress(),
             "2. bob | Address: " + bob.getAddress()) + System.lineSeparator();
         assertEquals(expected, output);
+    }
+
+    @Test
+    void execute_withUnexpectedArguments_throwsException() {
+        Blockchain blockchain = Blockchain.createDefault();
+        WalletManager walletManager = new WalletManager();
+        ListCommand command = new ListCommand(walletManager);
+
+        Exceptions exception = assertThrows(Exceptions.class, () -> command.execute("extra", blockchain));
+
+        assertEquals("Error: Invalid list format. Use: list", exception.getMessage());
+    }
+
+    @Test
+    void constructor_nullWalletManager_throwsException() {
+        assertThrows(NullPointerException.class, () -> new ListCommand(null));
     }
 
     private String runCommand(Command command, Blockchain blockchain) {

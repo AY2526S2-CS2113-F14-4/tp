@@ -5,6 +5,8 @@ import seedu.duke.model.Blockchain;
 import seedu.duke.model.Wallet;
 import seedu.duke.model.WalletManager;
 
+import java.util.Objects;
+
 public class CreateCommand extends Command {
     private static final String HELP_DESCRIPTION = """
             Format: create w/WALLET_NAME
@@ -25,23 +27,26 @@ public class CreateCommand extends Command {
     public CreateCommand(String arguments, WalletManager walletManager) {
         super(HELP_DESCRIPTION);
         this.arguments = arguments;
-        this.walletManager = walletManager;
+        this.walletManager = Objects.requireNonNull(walletManager);
     }
 
     @Override
     public void execute(String description, Blockchain blockchain) throws Exceptions {
-        String walletName = parseArguments(arguments);
-        if (walletName == null || walletName.isBlank()) {
-            throw new Exceptions(NAME_ERROR);
-        }
+        String walletName = parseArguments(resolveArguments(description));
 
-        String trimmedWalletName = walletName.trim();
-        if (walletManager.hasWallet(trimmedWalletName)) {
+        if (walletManager.hasWallet(walletName)) {
             throw new Exceptions(DUPLICATE_ERROR);
         }
 
-        Wallet wallet = walletManager.createWallet(trimmedWalletName);
+        Wallet wallet = walletManager.createWallet(walletName);
         System.out.println("Wallet created: " + wallet.getName());
+    }
+
+    private String resolveArguments(String description) {
+        if (arguments == null || arguments.isBlank()) {
+            return description;
+        }
+        return arguments;
     }
 
     private String parseArguments(String args) throws Exceptions {
@@ -55,6 +60,9 @@ public class CreateCommand extends Command {
         }
 
         String walletName = trimmedArgs.substring(2).trim();
+        if (walletName.isEmpty()) {
+            throw new Exceptions(NAME_ERROR);
+        }
         if (walletName.chars().anyMatch(Character::isWhitespace)) {
             throw new Exceptions(NAME_WHITESPACE_ERROR);
         }

@@ -38,6 +38,17 @@ class CreateCommandTest {
     }
 
     @Test
+    void execute_nullArguments_throwsException() {
+        Blockchain blockchain = Blockchain.createDefault();
+        WalletManager walletManager = new WalletManager();
+        CreateCommand command = new CreateCommand(null, walletManager);
+
+        Exceptions exception = assertThrows(Exceptions.class, () -> command.execute(blockchain));
+        assertEquals("Error: wallet name cannot be empty.", exception.getMessage());
+        assertEquals(0, walletManager.getWallets().size());
+    }
+
+    @Test
     void execute_duplicateName_throwsException() {
         Blockchain blockchain = Blockchain.createDefault();
         WalletManager walletManager = new WalletManager();
@@ -71,12 +82,33 @@ class CreateCommandTest {
         assertEquals(0, walletManager.getWallets().size());
     }
 
+    @Test
+    void execute_blankStoredArguments_usesDescriptionFallback() {
+        Blockchain blockchain = Blockchain.createDefault();
+        WalletManager walletManager = new WalletManager();
+        CreateCommand command = new CreateCommand("   ", walletManager);
+
+        String output = runCommand(command, "w/alice", blockchain);
+
+        assertEquals("Wallet created: alice" + System.lineSeparator(), output);
+        assertEquals(1, walletManager.getWallets().size());
+    }
+
+    @Test
+    void constructor_nullWalletManager_throwsException() {
+        assertThrows(NullPointerException.class, () -> new CreateCommand("w/alice", null));
+    }
+
     private String runCommand(Command command, Blockchain blockchain) {
+        return runCommand(command, "", blockchain);
+    }
+
+    private String runCommand(Command command, String description, Blockchain blockchain) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PrintStream originalOut = System.out;
         System.setOut(new PrintStream(outputStream));
         try {
-            command.execute(blockchain);
+            command.execute(description, blockchain);
         } catch (Exceptions e) {
             throw new RuntimeException(e);
         } finally {
