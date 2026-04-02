@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 
@@ -17,6 +18,6 @@ public class ExitCommand extends Command {
 
     @Override
     public void execute(Blockchain blockchain, Scanner in) throws Crypto1010Exception {
-        System.out.println("Exiting Crypto1010...");
+        Ui.println("Exiting Crypto1010...");
     }
 }

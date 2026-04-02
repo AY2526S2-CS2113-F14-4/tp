@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 
@@ -19,6 +20,6 @@ public abstract class Command {
     }
 
     public void displayHelpDescription() {
-        System.out.println(helpDescription);
+        Ui.println(helpDescription);
     }
 }

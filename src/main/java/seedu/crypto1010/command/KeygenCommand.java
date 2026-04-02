@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.Key;
@@ -39,7 +40,7 @@ public class KeygenCommand extends Command {
         Wallet wallet = walletManager.findWallet(walletName)
                 .orElseThrow(() -> new Crypto1010Exception(WALLET_NOT_FOUND_ERROR));
         wallet.setKeys(Key.generateKeyPair());
-        System.out.println(KEY_PAIR_GENERATION_SUCCESSFUL);
+        Ui.println(KEY_PAIR_GENERATION_SUCCESSFUL);
     }
 
     private String parseArguments(String args) throws Crypto1010Exception {

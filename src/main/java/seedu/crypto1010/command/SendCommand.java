@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.WalletManager;
@@ -138,14 +139,14 @@ public class SendCommand extends Command {
     }
 
     private void printTransferSummary(TransferRequest transferRequest) {
-        System.out.println("Transaction sent successfully.");
-        System.out.println("Wallet: " + transferRequest.getSenderWalletName());
-        System.out.println("To: " + transferRequest.getRecipientAddress());
-        System.out.println("Amount: " + transferRequest.getAmount().toPlainString());
-        System.out.println("Speed: " + transferRequest.getSpeedLabel());
-        System.out.println("Fee: " + transferRequest.getFee().toPlainString());
+        Ui.println("Transaction sent successfully.");
+        Ui.println("Wallet: " + transferRequest.getSenderWalletName());
+        Ui.println("To: " + transferRequest.getRecipientAddress());
+        Ui.println("Amount: " + transferRequest.getAmount().toPlainString());
+        Ui.println("Speed: " + transferRequest.getSpeedLabel());
+        Ui.println("Fee: " + transferRequest.getFee().toPlainString());
         if (transferRequest.getNote() != null) {
-            System.out.println("Note: " + transferRequest.getNote());
+            Ui.println("Note: " + transferRequest.getNote());
         }
     }
 

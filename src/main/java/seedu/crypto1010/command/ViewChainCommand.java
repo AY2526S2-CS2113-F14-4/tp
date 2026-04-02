@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Block;
 import seedu.crypto1010.model.Blockchain;
@@ -27,12 +28,12 @@ public class ViewChainCommand extends Command {
                 .mapToInt(block -> block.getTransactions().size())
                 .sum();
 
-        System.out.println("Blockchain Overview:");
-        System.out.println("Total blocks: " + blocks.size());
-        System.out.println("Total transactions: " + totalTransactions);
-        System.out.println("Blocks:");
+        Ui.println("Blockchain Overview:");
+        Ui.println("Total blocks: " + blocks.size());
+        Ui.println("Total transactions: " + totalTransactions);
+        Ui.println("Blocks:");
         for (Block block : blocks) {
-            System.out.println(block.getIndex()
+            Ui.println(block.getIndex()
                     + " | tx=" + block.getTransactions().size()
                     + " | time=" + block.getTimestamp()
                     + " | hash=" + compactHash(block.getCurrentHash()));

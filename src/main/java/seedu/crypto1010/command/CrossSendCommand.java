@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.CurrencyCode;
@@ -65,14 +66,14 @@ public class CrossSendCommand extends Command {
                 normalizedCurrency,
                 blockchain);
 
-        System.out.println("Cross-account transfer completed successfully.");
-        System.out.println("From wallet: " + result.senderWalletName());
-        System.out.println("To account: " + parsedArgs.accountName().toLowerCase());
-        System.out.println("Recipient wallet: " + result.recipientWalletName());
-        System.out.println("Amount: " + amount.stripTrailingZeros().toPlainString());
-        System.out.println("Currency: " + normalizedCurrency);
+        Ui.println("Cross-account transfer completed successfully.");
+        Ui.println("From wallet: " + result.senderWalletName());
+        Ui.println("To account: " + parsedArgs.accountName().toLowerCase());
+        Ui.println("Recipient wallet: " + result.recipientWalletName());
+        Ui.println("Amount: " + amount.stripTrailingZeros().toPlainString());
+        Ui.println("Currency: " + normalizedCurrency);
         if (result.recipientWalletCreated()) {
-            System.out.println("Recipient wallet was created automatically.");
+            Ui.println("Recipient wallet was created automatically.");
         }
     }
 

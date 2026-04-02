@@ -46,10 +46,10 @@ public class Crypto1010 {
         boolean allowBlockchainSave = blockchainLoadResult.loadedSuccessfully();
         boolean allowWalletSave = walletLoadResult.loadedSuccessfully();
         if (!allowBlockchainSave) {
-            System.out.println("Blockchain save is disabled to avoid overwriting existing data after load failure.");
+            Ui.println("Blockchain save is disabled to avoid overwriting existing data after load failure.");
         }
         if (!allowWalletSave) {
-            System.out.println("Wallet save is disabled to avoid overwriting existing data after load failure.");
+            Ui.println("Wallet save is disabled to avoid overwriting existing data after load failure.");
         }
         Parser parser = new Parser(walletManager, accountUsername, Crypto1010.class);
 
@@ -73,7 +73,7 @@ public class Crypto1010 {
                     c = parser.parse(message);
                 } catch (IllegalArgumentException e) {
                     LOGGER.log(Level.FINE, "Command parse failed for input: " + message, e);
-                    System.out.println("Error: Invalid command. Use: help");
+                    Ui.println("Error: Invalid command. Use: help");
                     continue;
                 }
                 long startNs = System.nanoTime();
@@ -103,7 +103,7 @@ public class Crypto1010 {
                         allowWalletSave);
             } catch (Crypto1010Exception e) {
                 LOGGER.log(Level.WARNING, "Command execution failed.", e);
-                System.out.println(e.getMessage());
+                Ui.println(e.getMessage());
             }
         }
     }
@@ -113,7 +113,7 @@ public class Crypto1010 {
         try {
             authenticationService.load();
         } catch (IOException e) {
-            System.out.println("Failed to load account data. Starting with no registered accounts.");
+            Ui.println("Failed to load account data. Starting with no registered accounts.");
         }
         return authenticationService;
     }
@@ -143,29 +143,29 @@ public class Crypto1010 {
                 break;
             case "3":
             case "exit":
-                System.out.println("Exiting Crypto1010.");
+                Ui.println("Exiting Crypto1010.");
                 return null;
             default:
-                System.out.println(ACCOUNT_SELECTION_ERROR);
+                Ui.println(ACCOUNT_SELECTION_ERROR);
             }
         }
     }
 
     private static void printAuthenticationMenu(AuthenticationService authenticationService) {
-        System.out.println(DIVIDER);
-        System.out.println(ACCOUNT_ACCESS_HEADER);
+        Ui.println(DIVIDER);
+        Ui.println(ACCOUNT_ACCESS_HEADER);
         if (!authenticationService.hasRegisteredAccounts()) {
-            System.out.println("No registered accounts found. Register to get started.");
+            Ui.println("No registered accounts found. Register to get started.");
         }
-        System.out.println("1. login");
-        System.out.println("2. register");
-        System.out.println("3. exit");
-        System.out.println(DIVIDER);
+        Ui.println("1. login");
+        Ui.println("2. register");
+        Ui.println("3. exit");
+        Ui.println(DIVIDER);
     }
 
     private static String handleLogin(Scanner in, AuthenticationService authenticationService) {
         if (!authenticationService.hasRegisteredAccounts()) {
-            System.out.println("Error: No accounts registered yet. Choose register first.");
+            Ui.println("Error: No accounts registered yet. Choose register first.");
             return null;
         }
 
@@ -177,10 +177,10 @@ public class Crypto1010 {
 
         try {
             String authenticatedUsername = authenticationService.authenticate(username, password);
-            System.out.println("Login successful. Logged in as " + authenticatedUsername + ".");
+            Ui.println("Login successful. Logged in as " + authenticatedUsername + ".");
             return authenticatedUsername;
         } catch (AuthenticationException e) {
-            System.out.println(e.getMessage());
+            Ui.println(e.getMessage());
             return null;
         }
     }
@@ -195,16 +195,16 @@ public class Crypto1010 {
 
         try {
             String registeredUsername = authenticationService.register(username, password, passwordConfirmation);
-            System.out.println("Registration successful. Logged in as " + registeredUsername + ".");
+            Ui.println("Registration successful. Logged in as " + registeredUsername + ".");
             return registeredUsername;
         } catch (AuthenticationException | IOException e) {
-            System.out.println(e.getMessage());
+            Ui.println(e.getMessage());
             return null;
         }
     }
 
     private static String promptForTrimmedInput(Scanner in, String prompt) {
-        System.out.println(prompt);
+        Ui.println(prompt);
         try {
             return in.nextLine().strip();
         } catch (NoSuchElementException e) {
@@ -213,19 +213,19 @@ public class Crypto1010 {
     }
 
     private static void printWelcome(String accountUsername) {
-        System.out.println(DIVIDER);
-        System.out.println("Welcome to Crypto1010");
-        System.out.println("Logged in as: " + accountUsername);
-        System.out.println("Manage wallets, send transactions, and inspect your blockchain quickly.");
-        System.out.println("Try: create w/MainWallet | list | help");
-        System.out.println(DIVIDER);
+        Ui.println(DIVIDER);
+        Ui.println("Welcome to Crypto1010");
+        Ui.println("Logged in as: " + accountUsername);
+        Ui.println("Manage wallets, send transactions, and inspect your blockchain quickly.");
+        Ui.println("Try: create w/MainWallet | list | help");
+        Ui.println(DIVIDER);
     }
 
     private static LoadResult<Blockchain> loadBlockchain(BlockchainStorage storage) {
         try {
             return new LoadResult<>(storage.load(), true);
         } catch (IOException e) {
-            System.out.println("Failed to load blockchain data. Starting with default blockchain.");
+            Ui.println("Failed to load blockchain data. Starting with default blockchain.");
             return new LoadResult<>(Blockchain.createDefault(), false);
         }
     }
@@ -234,7 +234,7 @@ public class Crypto1010 {
         try {
             return new LoadResult<>(storage.load(), true);
         } catch (IOException e) {
-            System.out.println("Failed to load wallet data. Starting with empty wallet list.");
+            Ui.println("Failed to load wallet data. Starting with empty wallet list.");
             return new LoadResult<>(new WalletManager(), false);
         }
     }
@@ -250,14 +250,14 @@ public class Crypto1010 {
             try {
                 blockchainStorage.save(blockchain);
             } catch (IOException e) {
-                System.out.println("Failed to save blockchain data.");
+                Ui.println("Failed to save blockchain data.");
             }
         }
         if (allowWalletSave) {
             try {
                 walletStorage.save(walletManager);
             } catch (IOException e) {
-                System.out.println("Failed to save wallet data.");
+                Ui.println("Failed to save wallet data.");
             }
         }
     }

@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.Wallet;
@@ -40,13 +41,13 @@ public class HistoryCommand extends Command {
 
         List<String> transactionHistory = wallet.getTransactionHistory();
         if (transactionHistory.isEmpty()) {
-            System.out.println("No transaction history found for " + wallet.getName() + ".");
+            Ui.println("No transaction history found for " + wallet.getName() + ".");
             return;
         }
 
-        System.out.println("Transaction history for " + wallet.getName() + ":");
+        Ui.println("Transaction history for " + wallet.getName() + ":");
         for (int i = 0; i < transactionHistory.size(); i++) {
-            System.out.println((i + 1) + ". " + transactionHistory.get(i));
+            Ui.println((i + 1) + ". " + transactionHistory.get(i));
         }
     }
 

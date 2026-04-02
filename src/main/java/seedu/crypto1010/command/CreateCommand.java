@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.CurrencyCode;
@@ -57,9 +58,9 @@ public class CreateCommand extends Command {
 
         Wallet wallet = walletManager.createWallet(walletName, currencyCode);
         if (CurrencyCode.isGeneric(currencyCode)) {
-            System.out.println("Wallet created: " + wallet.getName());
+            Ui.println("Wallet created: " + wallet.getName());
         } else {
-            System.out.println("Wallet created: " + wallet.getName() + " | Currency: " + currencyCode);
+            Ui.println("Wallet created: " + wallet.getName() + " | Currency: " + currencyCode);
         }
     }
 

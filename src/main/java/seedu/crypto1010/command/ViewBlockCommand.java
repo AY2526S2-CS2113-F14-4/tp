@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Block;
 import seedu.crypto1010.model.Blockchain;
@@ -38,13 +39,13 @@ public class ViewBlockCommand extends Command {
         }
 
         Block block = blockchain.getBlock(index);
-        System.out.println("Block Index   : " + block.getIndex());
-        System.out.println("Timestamp     : " + block.getTimestamp());
-        System.out.println("Previous Hash : " + block.getPreviousHash());
-        System.out.println("Current Hash  : " + block.getCurrentHash());
-        System.out.println("Transactions:");
+        Ui.println("Block Index   : " + block.getIndex());
+        Ui.println("Timestamp     : " + block.getTimestamp());
+        Ui.println("Previous Hash : " + block.getPreviousHash());
+        Ui.println("Current Hash  : " + block.getCurrentHash());
+        Ui.println("Transactions:");
         for (String transaction : block.getTransactions()) {
-            System.out.println(transaction);
+            Ui.println(transaction);
         }
     }
 

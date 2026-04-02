@@ -1,6 +1,7 @@
 package seedu.crypto1010.command;
 
 import seedu.crypto1010.Parser;
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.WalletManager;
@@ -83,15 +84,15 @@ public class TutorialCommand extends Command {
 
         int index = 0;
 
-        System.out.println(WELCOME_MESSAGE);
+        Ui.println(WELCOME_MESSAGE);
         while (true) {
-            System.out.println();
-            System.out.println(tutorialMessages[index]);
-            System.out.println("Enter the following command:");
-            System.out.println(instructions[index]);
+            Ui.println();
+            Ui.println(tutorialMessages[index]);
+            Ui.println("Enter the following command:");
+            Ui.println(instructions[index]);
             String input = in.nextLine().strip();
             if (input.equals("tutorial exit") || input.equals("exit")) {
-                System.out.println(EXIT_MESSAGE);
+                Ui.println(EXIT_MESSAGE);
                 return;
             } else if (input.equals(instructions[index]) ||
                     (index == 9 && input.startsWith(instructions[index].substring(0,19)))) {
@@ -100,10 +101,10 @@ public class TutorialCommand extends Command {
                     c.execute(tutorialBlockchain);
                     index++;
                 } catch (Crypto1010Exception e) {
-                    System.out.println(ERROR_MESSAGE);
+                    Ui.println(ERROR_MESSAGE);
                 }
             } else {
-                System.out.println(ERROR_MESSAGE);
+                Ui.println(ERROR_MESSAGE);
             }
         }
     }

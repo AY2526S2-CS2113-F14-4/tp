@@ -1,6 +1,7 @@
 package seedu.crypto1010.command;
 
 import seedu.crypto1010.Parser;
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.WalletManager;
@@ -40,14 +41,14 @@ public class HelpCommand extends Command {
                     assert c.getCommand() != null : "command word should have a command";
                     assert c.getDescription() != null : "command word should have a description";
 
-                    System.out.print("  ");
-                    System.out.print(c.getCommand());
+                    Ui.print("  ");
+                    Ui.print(c.getCommand());
                     for (int i = 0; i < COMMAND_LIST_COLUMN_WIDTH - c.getCommand().length(); i++) {
-                        System.out.print(" ");
+                        Ui.print(" ");
                     }
-                    System.out.println(c.getDescription());
+                    Ui.println(c.getDescription());
                 }
-                System.out.println(HELP_MESSAGE);
+                Ui.println(HELP_MESSAGE);
             } else {
                 if (!arguments.startsWith(COMMAND_PREFIX)) {
                     throw new Crypto1010Exception(INVALID_FORMAT_ERROR);

@@ -1,5 +1,6 @@
 package seedu.crypto1010.command;
 
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
 import seedu.crypto1010.model.WalletManager;
@@ -39,7 +40,7 @@ public class BalanceCommand extends Command {
         }
         BigDecimal balance = blockchain.getPreciseBalance(trimmedWalletName);
 
-        System.out.println("Balance of " + trimmedWalletName + ": " + formatBalance(balance));
+        Ui.println("Balance of " + trimmedWalletName + ": " + formatBalance(balance));
     }
 
     private String parseArguments(String args) throws Crypto1010Exception {

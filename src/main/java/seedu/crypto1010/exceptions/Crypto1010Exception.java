@@ -1,5 +1,7 @@
 package seedu.crypto1010.exceptions;
 
+import seedu.crypto1010.Ui;
+
 /**
  * Custom exception type used throughout the Crypto1010 application.
  * Allows user-friendly and personality-filled error messages.
@@ -22,6 +24,6 @@ public class Crypto1010Exception extends Exception {
      * @param message the error message to print
      */
     public static void printError(String message) {
-        System.out.println(message);
+        Ui.println(message);
     }
 }

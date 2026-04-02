@@ -2,6 +2,7 @@ package seedu.crypto1010.model;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import seedu.crypto1010.Ui;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 
 public class Key {
@@ -40,29 +41,29 @@ public class Key {
     }
 
     public static Key[] generateKeyPair() throws Crypto1010Exception {
-        System.out.println(GENERATE_START);
+        Ui.println(GENERATE_START);
 
         // Creates primeP
         BigInteger primeP = BigInteger.probablePrime(KEY_SIZE, RANDOM);
-        System.out.println(PRIME_P_DISPLAY + truncate(primeP));
+        Ui.println(PRIME_P_DISPLAY + truncate(primeP));
 
         // Recreates primeQ until it is different from primeP
         BigInteger primeQ;
         do {
             primeQ = BigInteger.probablePrime(KEY_SIZE, RANDOM);
         } while (primeQ.equals(primeP));
-        System.out.println(PRIME_Q_DISPLAY + truncate(primeQ));
+        Ui.println(PRIME_Q_DISPLAY + truncate(primeQ));
 
 
         // Creates public modulus, Euler's totient, and private exponent for private key
         BigInteger modulus = primeP.multiply(primeQ);
-        System.out.println(MODULUS_DISPLAY + truncate(modulus));
+        Ui.println(MODULUS_DISPLAY + truncate(modulus));
 
         BigInteger totient = primeP.subtract(BigInteger.ONE).multiply(primeQ.subtract(BigInteger.ONE));
-        System.out.println(TOTIENT_DISPLAY + truncate(totient));
+        Ui.println(TOTIENT_DISPLAY + truncate(totient));
 
         BigInteger privateExponent = PUBLIC_EXPONENT.modInverse(totient);
-        System.out.println(PRIVATE_EXP_DISPLAY + truncate(privateExponent));
+        Ui.println(PRIVATE_EXP_DISPLAY + truncate(privateExponent));
 
         // Ensures math checks out
         BigInteger check = PUBLIC_EXPONENT.multiply(privateExponent).mod(totient);
