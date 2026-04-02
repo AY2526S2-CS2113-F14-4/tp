@@ -3,77 +3,95 @@ package seedu.crypto1010;
 import seedu.crypto1010.auth.AuthenticationException;
 import seedu.crypto1010.auth.AuthenticationService;
 import seedu.crypto1010.command.Command;
+import seedu.crypto1010.command.CommandWord;
 import seedu.crypto1010.command.ExitCommand;
+import seedu.crypto1010.command.TutorialCommand;
 import seedu.crypto1010.exceptions.Crypto1010Exception;
 import seedu.crypto1010.model.Blockchain;
+import seedu.crypto1010.model.Wallet;
 import seedu.crypto1010.model.WalletManager;
 import seedu.crypto1010.storage.AccountStorage;
 import seedu.crypto1010.storage.BlockchainStorage;
 import seedu.crypto1010.storage.WalletStorage;
+import seedu.crypto1010.ui.CliVisuals;
+import seedu.crypto1010.ui.InteractiveShell;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.NoSuchElementException;
+import java.io.PrintStream;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class Crypto1010 {
-    private static final String DIVIDER =
-            "============================================================";
-    private static final String ACCOUNT_ACCESS_HEADER = "Crypto1010 Account Access";
+    private static final Logger LOGGER = Logger.getLogger(Crypto1010.class.getName());
     private static final String ACCOUNT_SELECTION_ERROR =
             "Error: Invalid selection. Choose login, register, or exit.";
+    private static final String INVALID_COMMAND_HINT_PREFIX = "Did you mean: ";
+    private static final int MAX_TIMELINE_ENTRIES = 14;
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final List<String> RISKY_COMMANDS = List.of("send", "crosssend", "create", "keygen");
 
     /**
      * Main entry-point for the java.crypto1010.Crypto1010 application.
      */
     public static void main(String[] args) {
-        Scanner in = new Scanner(System.in);
-        AuthenticationService authenticationService = loadAuthenticationService();
-        String accountUsername = authenticateUser(in, authenticationService);
-        if (accountUsername == null) {
-            return;
-        }
-
-        printWelcome(accountUsername);
-        BlockchainStorage blockchainStorage = new BlockchainStorage(Crypto1010.class, accountUsername);
-        WalletStorage walletStorage = new WalletStorage(Crypto1010.class, accountUsername);
-        LoadResult<Blockchain> blockchainLoadResult = loadBlockchain(blockchainStorage);
-        LoadResult<WalletManager> walletLoadResult = loadWalletManager(walletStorage);
-        Blockchain blockchain = blockchainLoadResult.data();
-        WalletManager walletManager = walletLoadResult.data();
-        boolean allowBlockchainSave = blockchainLoadResult.loadedSuccessfully();
-        boolean allowWalletSave = walletLoadResult.loadedSuccessfully();
-        if (!allowBlockchainSave) {
-            System.out.println("Blockchain save is disabled to avoid overwriting existing data after load failure.");
-        }
-        if (!allowWalletSave) {
-            System.out.println("Wallet save is disabled to avoid overwriting existing data after load failure.");
-        }
-        Parser parser = new Parser(walletManager, accountUsername, Crypto1010.class);
-
-        while (true) {
-            String message;
-            try {
-                message = in.nextLine().strip();
-            } catch (NoSuchElementException e) {
-                saveData(
-                        blockchainStorage,
-                        walletStorage,
-                        blockchain,
-                        walletManager,
-                        allowBlockchainSave,
-                        allowWalletSave);
-                break;
+        CliVisuals.install();
+        try (InteractiveShell shell = InteractiveShell.create()) {
+            CliVisuals.printAppBanner();
+            CliVisuals.printCommandExplorer();
+            CliVisuals.printUiControlGuide();
+            Scanner in = new Scanner(System.in);
+            AuthenticationService authenticationService = loadAuthenticationService();
+            String accountUsername = authenticateUser(shell, authenticationService);
+            if (accountUsername == null) {
+                return;
             }
-            try {
-                Command c;
-                try {
-                    c = parser.parse(message);
-                } catch (IllegalArgumentException e) {
-                    System.out.println("Error: Invalid command. Use: help");
-                    continue;
-                }
-                if (c instanceof ExitCommand) {
-                    c.execute(blockchain, in);
+
+            CliVisuals.printWelcomePanel(accountUsername);
+            shell.printCommandPalette();
+            BlockchainStorage blockchainStorage = new BlockchainStorage(Crypto1010.class, accountUsername);
+            WalletStorage walletStorage = new WalletStorage(Crypto1010.class, accountUsername);
+            LoadResult<Blockchain> blockchainLoadResult = loadBlockchain(blockchainStorage);
+            LoadResult<WalletManager> walletLoadResult = loadWalletManager(walletStorage);
+            Blockchain blockchain = blockchainLoadResult.data();
+            WalletManager walletManager = walletLoadResult.data();
+            boolean allowBlockchainSave = blockchainLoadResult.loadedSuccessfully();
+            boolean allowWalletSave = walletLoadResult.loadedSuccessfully();
+            if (!allowBlockchainSave) {
+                CliVisuals.printWarning(
+                        "Blockchain save is disabled to avoid overwriting existing data after load failure.");
+            }
+            if (!allowWalletSave) {
+                CliVisuals.printWarning(
+                        "Wallet save is disabled to avoid overwriting existing data after load failure.");
+            }
+            Parser parser = new Parser(walletManager, accountUsername, Crypto1010.class);
+            CliVisuals.printStatusDashboard(accountUsername, walletManager, blockchain);
+            shell.printCommandPalette();
+            CliRuntimeState runtimeState = new CliRuntimeState();
+
+            while (true) {
+                shell.updateDynamicCandidates(
+                        walletNames(walletManager),
+                        authenticationService.getRegisteredUsernames());
+                String rightStatus = CliVisuals.buildRightStatus(
+                        runtimeState.inputMode().label(),
+                        walletManager,
+                        blockchain,
+                        runtimeState.lastSaveAt(),
+                        runtimeState.confirmationsEnabled());
+                String message = shell.readLine(accountUsername, runtimeState.inputMode(), rightStatus);
+                if (message == null) {
                     saveData(
                             blockchainStorage,
                             walletStorage,
@@ -81,19 +99,109 @@ public class Crypto1010 {
                             walletManager,
                             allowBlockchainSave,
                             allowWalletSave);
+                    runtimeState.setLastSaveAt(nowTimestamp());
+                    addTimelineEntry(runtimeState.timeline(), "SYS", "session closed", 0);
                     break;
                 }
-                c.execute(blockchain, in);
-                saveData(
-                        blockchainStorage,
-                        walletStorage,
-                        blockchain,
-                        walletManager,
-                        allowBlockchainSave,
-                        allowWalletSave);
-            } catch (Crypto1010Exception e) {
-                System.out.println(e.getMessage());
+                if (message.isBlank()) {
+                    continue;
+                }
+
+                if (message.startsWith(":")) {
+                    UiDirective directive = handleMetaCommand(
+                            message,
+                            shell,
+                            runtimeState,
+                            accountUsername,
+                            walletManager,
+                            blockchain);
+                    if (directive == UiDirective.EXIT) {
+                        saveData(
+                                blockchainStorage,
+                                walletStorage,
+                                blockchain,
+                                walletManager,
+                                allowBlockchainSave,
+                                allowWalletSave);
+                        runtimeState.setLastSaveAt(nowTimestamp());
+                        addTimelineEntry(runtimeState.timeline(), "SYS", "session closed by :exit", 0);
+                        break;
+                    }
+                    continue;
+                }
+
+                String normalizedInput = normalizeInputAliases(message);
+                String commandWord = extractCommandWord(normalizedInput);
+                if (commandWord == null) {
+                    CliVisuals.printError("Error: Invalid command. Use: help");
+                    continue;
+                }
+
+                if (runtimeState.confirmationsEnabled() && requiresConfirmation(commandWord)) {
+                    if (!requestCommandConfirmation(shell, normalizedInput)) {
+                        CliVisuals.printWarning("Cancelled by user.");
+                        addTimelineEntry(runtimeState.timeline(), "SKIP", normalizedInput, 0);
+                        continue;
+                    }
+                }
+
+                Command command;
+                try {
+                    try {
+                        command = parser.parse(normalizedInput);
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.log(Level.FINE, "Command parse failed for input: " + normalizedInput, e);
+                        CliVisuals.printError("Error: Invalid command. Use: help");
+                        String suggestion = shell.suggestCommand(normalizedInput);
+                        if (suggestion != null) {
+                            CliVisuals.printHint(INVALID_COMMAND_HINT_PREFIX + suggestion);
+                        }
+                        addTimelineEntry(runtimeState.timeline(), "ERR", normalizedInput, 0);
+                        continue;
+                    }
+
+                    CommandRunResult runResult = executeCommand(command, blockchain, in);
+                    if (runResult.error() != null) {
+                        LOGGER.log(
+                                Level.WARNING,
+                                "Command execution failed: " + normalizedInput,
+                                runResult.error());
+                        List<String> lines = new ArrayList<>(runResult.outputLines());
+                        lines.add(runResult.error().getMessage());
+                        CliVisuals.printCommandResultCard(normalizedInput, false, runResult.durationMs(), lines);
+                        addTimelineEntry(runtimeState.timeline(), "ERR", normalizedInput, runResult.durationMs());
+                        continue;
+                    }
+
+                    CliVisuals.printCommandResultCard(
+                            normalizedInput,
+                            true,
+                            runResult.durationMs(),
+                            runResult.outputLines());
+                    LOGGER.info(() -> "Command executed successfully: " + normalizedInput
+                            + " (" + runResult.durationMs() + " ms)");
+                    saveData(
+                            blockchainStorage,
+                            walletStorage,
+                            blockchain,
+                            walletManager,
+                            allowBlockchainSave,
+                            allowWalletSave);
+                    runtimeState.setLastSaveAt(nowTimestamp());
+                    addTimelineEntry(runtimeState.timeline(), "OK", normalizedInput, runResult.durationMs());
+
+                    if (command instanceof ExitCommand) {
+                        break;
+                    }
+                    CliVisuals.printSectionBreak();
+                } catch (Crypto1010Exception e) {
+                    LOGGER.log(Level.WARNING, "Unhandled command execution error: " + normalizedInput, e);
+                    CliVisuals.printError(e.getMessage());
+                    addTimelineEntry(runtimeState.timeline(), "ERR", normalizedInput, 0);
+                }
             }
+        } finally {
+            CliVisuals.uninstall();
         }
     }
 
@@ -102,15 +210,15 @@ public class Crypto1010 {
         try {
             authenticationService.load();
         } catch (IOException e) {
-            System.out.println("Failed to load account data. Starting with no registered accounts.");
+            CliVisuals.printWarning("Failed to load account data. Starting with no registered accounts.");
         }
         return authenticationService;
     }
 
-    private static String authenticateUser(Scanner in, AuthenticationService authenticationService) {
+    private static String authenticateUser(InteractiveShell shell, AuthenticationService authenticationService) {
         while (true) {
             printAuthenticationMenu(authenticationService);
-            String choice = promptForTrimmedInput(in, "Choice:");
+            String choice = shell.readPlain("Choice:");
             if (choice == null) {
                 return null;
             }
@@ -118,103 +226,77 @@ public class Crypto1010 {
             switch (choice.toLowerCase()) {
             case "1":
             case "login":
-                String loggedInUsername = handleLogin(in, authenticationService);
+                String loggedInUsername = handleLogin(shell, authenticationService);
                 if (loggedInUsername != null) {
                     return loggedInUsername;
                 }
                 break;
             case "2":
             case "register":
-                String registeredUsername = handleRegistration(in, authenticationService);
+                String registeredUsername = handleRegistration(shell, authenticationService);
                 if (registeredUsername != null) {
                     return registeredUsername;
                 }
                 break;
             case "3":
             case "exit":
-                System.out.println("Exiting Crypto1010.");
+                CliVisuals.printInfo("Exiting Crypto1010.");
                 return null;
             default:
-                System.out.println(ACCOUNT_SELECTION_ERROR);
+                CliVisuals.printError(ACCOUNT_SELECTION_ERROR);
             }
         }
     }
 
     private static void printAuthenticationMenu(AuthenticationService authenticationService) {
-        System.out.println(DIVIDER);
-        System.out.println(ACCOUNT_ACCESS_HEADER);
-        if (!authenticationService.hasRegisteredAccounts()) {
-            System.out.println("No registered accounts found. Register to get started.");
-        }
-        System.out.println("1. login");
-        System.out.println("2. register");
-        System.out.println("3. exit");
-        System.out.println(DIVIDER);
+        CliVisuals.printAuthMenu(authenticationService.hasRegisteredAccounts());
     }
 
-    private static String handleLogin(Scanner in, AuthenticationService authenticationService) {
+    private static String handleLogin(InteractiveShell shell, AuthenticationService authenticationService) {
         if (!authenticationService.hasRegisteredAccounts()) {
-            System.out.println("Error: No accounts registered yet. Choose register first.");
+            CliVisuals.printError("Error: No accounts registered yet. Choose register first.");
             return null;
         }
 
-        String username = promptForTrimmedInput(in, "Username:");
-        String password = promptForTrimmedInput(in, "Password:");
+        String username = shell.readPlain("Username:");
+        String password = shell.readSecret("Password:");
         if (username == null || password == null) {
             return null;
         }
 
         try {
             String authenticatedUsername = authenticationService.authenticate(username, password);
-            System.out.println("Login successful. Logged in as " + authenticatedUsername + ".");
+            CliVisuals.printSuccess("Login successful. Logged in as " + authenticatedUsername + ".");
             return authenticatedUsername;
         } catch (AuthenticationException e) {
-            System.out.println(e.getMessage());
+            CliVisuals.printError(e.getMessage());
             return null;
         }
     }
 
-    private static String handleRegistration(Scanner in, AuthenticationService authenticationService) {
-        String username = promptForTrimmedInput(in, "Choose username:");
-        String password = promptForTrimmedInput(in, "Choose password:");
-        String passwordConfirmation = promptForTrimmedInput(in, "Confirm password:");
+    private static String handleRegistration(InteractiveShell shell, AuthenticationService authenticationService) {
+        String username = shell.readPlain("Choose username:");
+        String password = shell.readSecret("Choose password:");
+        String passwordConfirmation = shell.readSecret("Confirm password:");
         if (username == null || password == null || passwordConfirmation == null) {
             return null;
         }
 
         try {
             String registeredUsername = authenticationService.register(username, password, passwordConfirmation);
-            System.out.println("Registration successful. Logged in as " + registeredUsername + ".");
+            CliVisuals.printSuccess("Registration successful. Logged in as " + registeredUsername + ".");
             return registeredUsername;
         } catch (AuthenticationException | IOException e) {
-            System.out.println(e.getMessage());
+            CliVisuals.printError(e.getMessage());
             return null;
         }
-    }
-
-    private static String promptForTrimmedInput(Scanner in, String prompt) {
-        System.out.println(prompt);
-        try {
-            return in.nextLine().strip();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-    }
-
-    private static void printWelcome(String accountUsername) {
-        System.out.println(DIVIDER);
-        System.out.println("Welcome to Crypto1010");
-        System.out.println("Logged in as: " + accountUsername);
-        System.out.println("Manage wallets, send transactions, and inspect your blockchain quickly.");
-        System.out.println("Try: create w/MainWallet | list | help");
-        System.out.println(DIVIDER);
     }
 
     private static LoadResult<Blockchain> loadBlockchain(BlockchainStorage storage) {
         try {
             return new LoadResult<>(storage.load(), true);
         } catch (IOException e) {
-            System.out.println("Failed to load blockchain data. Starting with default blockchain.");
+            CliVisuals.printWarning("Failed to load blockchain data. Starting with default blockchain.");
             return new LoadResult<>(Blockchain.createDefault(), false);
         }
     }
@@ -223,7 +305,7 @@ public class Crypto1010 {
         try {
             return new LoadResult<>(storage.load(), true);
         } catch (IOException e) {
-            System.out.println("Failed to load wallet data. Starting with empty wallet list.");
+            CliVisuals.printWarning("Failed to load wallet data. Starting with empty wallet list.");
             return new LoadResult<>(new WalletManager(), false);
         }
     }
@@ -239,18 +321,315 @@ public class Crypto1010 {
             try {
                 blockchainStorage.save(blockchain);
             } catch (IOException e) {
-                System.out.println("Failed to save blockchain data.");
+                CliVisuals.printWarning("Failed to save blockchain data.");
             }
         }
         if (allowWalletSave) {
             try {
                 walletStorage.save(walletManager);
             } catch (IOException e) {
-                System.out.println("Failed to save wallet data.");
+                CliVisuals.printWarning("Failed to save wallet data.");
             }
         }
     }
 
+    private static UiDirective handleMetaCommand(
+            String message,
+            InteractiveShell shell,
+            CliRuntimeState runtimeState,
+            String accountUsername,
+            WalletManager walletManager,
+            Blockchain blockchain) {
+        String payload = message.substring(1).trim();
+        if (payload.isEmpty()) {
+            CliVisuals.printError("Error: Empty UI command. Use :help");
+            return UiDirective.CONTINUE;
+        }
+
+        String[] parts = payload.split("\\s+", 2);
+        String uiCommand = parts[0].toLowerCase(Locale.ROOT);
+        String argument = parts.length > 1 ? parts[1].trim() : "";
+
+        switch (uiCommand) {
+        case "help":
+            CliVisuals.printUiControlGuide();
+            CliVisuals.printHint("Themes available: " + CliVisuals.themeNames());
+            break;
+        case "theme":
+            if (argument.isBlank()) {
+                CliVisuals.printError("Error: Use :theme <" + CliVisuals.themeNames() + ">");
+                break;
+            }
+            if (CliVisuals.setTheme(argument)) {
+                CliVisuals.printSuccess("Theme changed to " + CliVisuals.getThemeName() + ".");
+            } else {
+                CliVisuals.printError("Unknown theme. Use one of: " + CliVisuals.themeNames());
+            }
+            break;
+        case "themes":
+            CliVisuals.printHint("Available themes: " + CliVisuals.themeNames());
+            break;
+        case "plain":
+            applyPlainMode(argument);
+            break;
+        case "mode":
+            InteractiveShell.InputMode mode = shell.parseMode(argument);
+            if (mode == null) {
+                CliVisuals.printError("Unknown mode. Use: normal, compose, search, history");
+            } else {
+                runtimeState.setInputMode(mode);
+                CliVisuals.printSuccess("Input mode set to " + mode.label() + ".");
+            }
+            break;
+        case "timeline":
+            CliVisuals.printTimeline(runtimeState.timeline());
+            break;
+        case "search":
+            if (argument.isBlank()) {
+                CliVisuals.printError("Error: Use :search <text>");
+                break;
+            }
+            List<String> matches = shell.searchHistory(argument, 12);
+            CliVisuals.printSearchResults(argument, matches);
+            break;
+        case "status":
+            CliVisuals.printStatusDashboard(accountUsername, walletManager, blockchain);
+            break;
+        case "home":
+            CliVisuals.printAppBanner();
+            CliVisuals.printStatusDashboard(accountUsername, walletManager, blockchain);
+            CliVisuals.printUiControlGuide();
+            shell.printCommandPalette();
+            break;
+        case "clear":
+            CliVisuals.clearScreen();
+            CliVisuals.printAppBanner();
+            break;
+        case "confirm":
+            applyConfirmationMode(runtimeState, argument);
+            break;
+        case "exit":
+        case "quit":
+            return UiDirective.EXIT;
+        default:
+            CliVisuals.printError("Unknown UI command: :" + uiCommand + ". Use :help");
+        }
+        return UiDirective.CONTINUE;
+    }
+
+    private static void applyPlainMode(String argument) {
+        if (argument.equalsIgnoreCase("toggle")) {
+            CliVisuals.setPlainMode(!CliVisuals.isPlainMode());
+            CliVisuals.printSuccess("Plain mode " + (CliVisuals.isPlainMode() ? "enabled." : "disabled."));
+            return;
+        }
+        Boolean enabled = parseOnOff(argument);
+        if (enabled == null) {
+            CliVisuals.printError("Error: Use :plain <on|off|toggle>");
+            return;
+        }
+        CliVisuals.setPlainMode(enabled);
+        CliVisuals.printSuccess("Plain mode " + (enabled ? "enabled." : "disabled."));
+    }
+
+    private static void applyConfirmationMode(CliRuntimeState runtimeState, String argument) {
+        if (argument.equalsIgnoreCase("toggle")) {
+            runtimeState.setConfirmationsEnabled(!runtimeState.confirmationsEnabled());
+            CliVisuals.printSuccess("Confirmations "
+                    + (runtimeState.confirmationsEnabled() ? "enabled." : "disabled."));
+            return;
+        }
+        Boolean enabled = parseOnOff(argument);
+        if (enabled == null) {
+            CliVisuals.printError("Error: Use :confirm <on|off|toggle>");
+            return;
+        }
+        runtimeState.setConfirmationsEnabled(enabled);
+        CliVisuals.printSuccess("Confirmations " + (enabled ? "enabled." : "disabled."));
+    }
+
+    private static Boolean parseOnOff(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if ("on".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("off".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        return null;
+    }
+
+    private static CommandRunResult executeCommand(Command command, Blockchain blockchain, Scanner in)
+            throws Crypto1010Exception {
+        String commandName = command.getClass().getSimpleName();
+        if (command instanceof TutorialCommand) {
+            long startedAt = System.nanoTime();
+            LOGGER.info(() -> "Starting interactive command: " + commandName);
+            command.execute(blockchain, in);
+            long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
+            LOGGER.info(() -> "Finished interactive command: " + commandName + " (" + durationMs + " ms)");
+            return new CommandRunResult(
+                    List.of("Interactive tutorial executed in passthrough mode."),
+                    durationMs,
+                    null);
+        }
+
+        long startedAt = System.nanoTime();
+        ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        Crypto1010Exception commandError = null;
+        LOGGER.fine(() -> "Starting command: " + commandName);
+        try (PrintStream captureOut = new PrintStream(outputBuffer, true)) {
+            System.setOut(captureOut);
+            try {
+                command.execute(blockchain, in);
+            } catch (Crypto1010Exception e) {
+                commandError = e;
+            }
+        } finally {
+            System.setOut(originalOut);
+        }
+        long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
+        List<String> outputLines = Arrays.stream(outputBuffer.toString().split("\\R"))
+                .map(String::stripTrailing)
+                .filter(line -> !line.isBlank())
+                .collect(Collectors.toList());
+        LOGGER.fine(() -> "Completed command: " + commandName + " (" + durationMs + " ms)");
+        return new CommandRunResult(outputLines, durationMs, commandError);
+    }
+
+    private static String normalizeInputAliases(String message) {
+        String trimmed = message == null ? "" : message.trim();
+        if (trimmed.isEmpty() || !trimmed.startsWith("/")) {
+            return trimmed;
+        }
+
+        String[] parts = trimmed.split("\\s+", 2);
+        String alias = parts[0].toLowerCase(Locale.ROOT);
+        String rest = parts.length > 1 ? parts[1].trim() : "";
+
+        return switch (alias) {
+        case "/h", "/help" -> appendCommandRest(CommandWord.HELP.getCommand(), rest);
+        case "/ls", "/list" -> appendCommandRest(CommandWord.LIST.getCommand(), rest);
+        case "/vc", "/viewchain" -> appendCommandRest(CommandWord.VIEWCHAIN.getCommand(), rest);
+        case "/vb", "/viewblock" -> appendCommandRest(CommandWord.VIEWBLOCK.getCommand(), rest);
+        case "/q", "/quit", "/exit" -> CommandWord.EXIT.getCommand();
+        case "/mk", "/create" -> rest.isBlank() ? CommandWord.CREATE.getCommand() : "create w/" + rest;
+        case "/kb", "/keygen" -> rest.isBlank() ? CommandWord.KEYGEN.getCommand() : "keygen w/" + rest;
+        case "/bal", "/balance" -> rest.isBlank() ? CommandWord.BALANCE.getCommand() : "balance w/" + rest;
+        case "/snd", "/send" -> appendCommandRest(CommandWord.SEND.getCommand(), rest);
+        case "/xs", "/crosssend" -> appendCommandRest(CommandWord.CROSSSEND.getCommand(), rest);
+        default -> trimmed;
+        };
+    }
+
+    private static String appendCommandRest(String command, String rest) {
+        if (rest == null || rest.isBlank()) {
+            return command;
+        }
+        return command + " " + rest;
+    }
+
+    private static String extractCommandWord(String normalizedInput) {
+        if (normalizedInput == null || normalizedInput.isBlank()) {
+            return null;
+        }
+        return normalizedInput.split("\\s+", 2)[0].trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean requiresConfirmation(String commandWord) {
+        if (commandWord == null) {
+            return false;
+        }
+        return RISKY_COMMANDS.contains(commandWord.toLowerCase(Locale.ROOT));
+    }
+
+    private static boolean requestCommandConfirmation(InteractiveShell shell, String commandText) {
+        String response = shell.readPlain("Confirm `" + commandText + "` ? [y/N]");
+        if (response == null) {
+            return false;
+        }
+        String normalized = response.trim().toLowerCase(Locale.ROOT);
+        return "y".equals(normalized) || "yes".equals(normalized);
+    }
+
+    private static List<String> walletNames(WalletManager walletManager) {
+        return walletManager.getWallets().stream()
+                .map(Wallet::getName)
+                .sorted(String::compareToIgnoreCase)
+                .toList();
+    }
+
+    private static void addTimelineEntry(Deque<String> timeline, String status, String command, long durationMs) {
+        String entry = "[" + nowTimestamp() + "] "
+                + status
+                + "  "
+                + command
+                + "  ("
+                + durationMs
+                + " ms)";
+        if (timeline.size() >= MAX_TIMELINE_ENTRIES) {
+            timeline.removeFirst();
+        }
+        timeline.addLast(entry);
+    }
+
+    private static String nowTimestamp() {
+        return LocalTime.now().format(TIME_FORMATTER);
+    }
+
     private record LoadResult<T>(T data, boolean loadedSuccessfully) {
+    }
+
+    private record CommandRunResult(List<String> outputLines, long durationMs, Crypto1010Exception error) {
+    }
+
+    private enum UiDirective {
+        CONTINUE,
+        EXIT
+    }
+
+    private static final class CliRuntimeState {
+        private final Deque<String> timeline;
+        private InteractiveShell.InputMode inputMode;
+        private boolean confirmationsEnabled;
+        private String lastSaveAt;
+
+        private CliRuntimeState() {
+            this.timeline = new ArrayDeque<>();
+            this.inputMode = InteractiveShell.InputMode.NORMAL;
+            this.confirmationsEnabled = true;
+            this.lastSaveAt = "--";
+        }
+
+        private Deque<String> timeline() {
+            return timeline;
+        }
+
+        private InteractiveShell.InputMode inputMode() {
+            return inputMode;
+        }
+
+        private void setInputMode(InteractiveShell.InputMode inputMode) {
+            this.inputMode = inputMode;
+        }
+
+        private boolean confirmationsEnabled() {
+            return confirmationsEnabled;
+        }
+
+        private void setConfirmationsEnabled(boolean confirmationsEnabled) {
+            this.confirmationsEnabled = confirmationsEnabled;
+        }
+
+        private String lastSaveAt() {
+            return lastSaveAt;
+        }
+
+        private void setLastSaveAt(String lastSaveAt) {
+            this.lastSaveAt = lastSaveAt;
+        }
     }
 }

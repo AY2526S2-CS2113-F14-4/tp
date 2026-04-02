@@ -27,6 +27,8 @@ public class Wallet {
         this.currencyCode = CurrencyCode.normalizeOrDefault(currencyCode);
         this.address = null; //set after keygen
         this.transactionHistory = new ArrayList<>();
+        assert !this.name.isBlank() : "wallet name must not be blank";
+        assert this.currencyCode != null : "currency code must not be null";
     }
 
     public String getName() {
@@ -46,9 +48,12 @@ public class Wallet {
 
     public void addTransaction(String transactionEntry) {
         transactionHistory.add(Objects.requireNonNull(transactionEntry).trim());
+        assert !transactionHistory.get(transactionHistory.size() - 1).isBlank()
+                : "transaction entry must not be blank";
     }
 
     public List<String> getTransactionHistory() {
+        assert transactionHistory != null : "transaction history must be initialized";
         return Collections.unmodifiableList(transactionHistory);
     }
 
@@ -59,5 +64,8 @@ public class Wallet {
         this.publicKey = keys[0];
         this.privateKey = keys[1];
         address = publicKey.getWalletAddress();
+        assert publicKey != null : "public key must not be null";
+        assert privateKey != null : "private key must not be null";
+        assert address != null && !address.isBlank() : "wallet address must be initialized";
     }
 }

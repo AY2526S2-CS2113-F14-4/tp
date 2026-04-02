@@ -33,6 +33,9 @@ public class Parser {
     }
 
     public CommandWord parseCommand(String commandWord) {
+        if (commandWord == null || commandWord.isBlank()) {
+            throw new IllegalArgumentException("Command word must not be blank.");
+        }
         return CommandWord.valueOf(commandWord.toUpperCase());
     }
 
@@ -47,24 +50,31 @@ public class Parser {
      *     that was parsed from the input text
      */
     public Command parse(String inputText) {
+        if (inputText == null || inputText.isBlank()) {
+            throw new IllegalArgumentException("Input command must not be blank.");
+        }
         String trimmedInput = inputText.trim();
         String[] components = trimmedInput.split("\\s+", 2);
-        CommandWord commandWord = parseCommand(components[0]);
-        String arguments = components.length > 1 ? components[1].trim() : "";
-        return switch (commandWord) {
-        case LIST -> new ListCommand(walletManager);
-        case HELP -> new HelpCommand(arguments);
-        case CREATE -> new CreateCommand(arguments, walletManager);
-        case BALANCE -> new BalanceCommand(arguments, walletManager);
-        case HISTORY -> new HistoryCommand(arguments, walletManager);
-        case CROSSSEND -> new CrossSendCommand(arguments, walletManager, currentAccountName, storageAnchor);
-        case VALIDATE -> new ValidateCommand();
-        case VIEWCHAIN -> new ViewChainCommand();
-        case VIEWBLOCK -> new ViewBlockCommand(arguments);
-        case EXIT -> new ExitCommand();
-        case SEND -> new SendCommand(arguments, walletManager);
-        case KEYGEN -> new KeygenCommand(arguments, walletManager);
-        case TUTORIAL -> new TutorialCommand(arguments);
-        };
+        try {
+            CommandWord commandWord = parseCommand(components[0]);
+            String arguments = components.length > 1 ? components[1].trim() : "";
+            return switch (commandWord) {
+            case LIST -> new ListCommand(walletManager);
+            case HELP -> new HelpCommand(arguments);
+            case CREATE -> new CreateCommand(arguments, walletManager);
+            case BALANCE -> new BalanceCommand(arguments, walletManager);
+            case HISTORY -> new HistoryCommand(arguments, walletManager);
+            case CROSSSEND -> new CrossSendCommand(arguments, walletManager, currentAccountName, storageAnchor);
+            case VALIDATE -> new ValidateCommand();
+            case VIEWCHAIN -> new ViewChainCommand();
+            case VIEWBLOCK -> new ViewBlockCommand(arguments);
+            case EXIT -> new ExitCommand();
+            case SEND -> new SendCommand(arguments, walletManager);
+            case KEYGEN -> new KeygenCommand(arguments, walletManager);
+            case TUTORIAL -> new TutorialCommand(arguments);
+            };
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Failed to parse command: " + trimmedInput, e);
+        }
     }
 }

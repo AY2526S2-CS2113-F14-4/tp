@@ -30,6 +30,11 @@ public class Block {
         this.previousHash = previousHash;
         this.transactions = new ArrayList<>(transactions);
         this.currentHash = currentHash;
+        assert index >= 0 : "block index must be non-negative";
+        assert this.timestamp != null : "timestamp must not be null";
+        assert this.previousHash != null : "previous hash must not be null";
+        assert this.transactions != null : "transactions must not be null";
+        assert this.currentHash != null : "current hash must not be null";
     }
 
     public int getIndex() {
@@ -37,6 +42,7 @@ public class Block {
     }
 
     public String getTimestamp() {
+        assert timestamp != null : "timestamp must not be null";
         return timestamp.format(FORMATTER);
     }
 
@@ -53,10 +59,12 @@ public class Block {
     }
 
     public List<String> getTransactions() {
+        assert transactions != null : "transactions must not be null";
         return Collections.unmodifiableList(transactions);
     }
 
     public String computeCurrentHash() {
+        assert transactions != null : "transactions must not be null";
         return computeHash(index, timestamp, previousHash, transactions);
     }
 
@@ -74,6 +82,9 @@ public class Block {
 
     private static String computeHash(int index, LocalDateTime timestamp,
                                       String previousHash, List<String> transactions) {
+        assert timestamp != null : "timestamp must not be null";
+        assert previousHash != null : "previous hash must not be null";
+        assert transactions != null : "transactions must not be null";
         String payload = index + "|" + timestamp + "|" + previousHash + "|" + String.join(";", transactions);
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
